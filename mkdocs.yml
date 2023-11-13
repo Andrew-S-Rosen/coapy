@@ -1,7 +1,7 @@
 site_name: coapy
-site_author: YourName
+site_author: Andrew S. Rosen
 site_description: >-
-  This is the coapy package!
+  A Python package to generate collaborator info for NSF COA forms
 nav:
   - Home: index.md
   - Installation:
@@ -10,9 +10,9 @@ nav:
       - usage.md
   - Code Documentation: reference/ # keep me!
   - About:
-      - example_docs/about/changelog.md
-      - example_docs/about/conduct.md
-      - example_docs/about/license.md
+      - about/changelog.md
+      - about/conduct.md
+      - about/license.md
 
 repo_url: https://github.com/Quantum-Accelerators/coapy/
 edit_uri: blob/main/docs/
