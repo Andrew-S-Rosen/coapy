@@ -1,1 +1,1 @@
-numpy==1.26.1
+scholarly==1.7.11
