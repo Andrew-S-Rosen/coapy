@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "coapy"
-description="A Python package description goes here."
+description="A Python package to generate collaborator info for NSF COA forms"
 version = "0.0.1"
 readme = "README.md"
 license = { text = "BSD-3" }
-authors = [{ name = "YourName", email = "YourName@email.com" }]
-keywords = ["MyKeyword1", "MyKeyword2"]
+authors = [{ name = "Andrew S. Rosen", email = "asrosen@princeton.com" }]
+keywords = ["grant-proposals"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
