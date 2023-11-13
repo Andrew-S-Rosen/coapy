@@ -37,6 +37,31 @@ def get_coauthors(id: str = "lHBjgLsAAAAJ", years: int | None = 2) -> list[str]:
     )
 
 
+def _get_scholar_profile(id: str, sections: list[str] = None) -> Author:
+    """
+    Given a Google Scholar ID, return the full profile.
+
+    Parameters
+    ----------
+    id : str
+        Google Scholar ID of the author. This is the string of characters
+        that appears in the URL of the author's Google Scholar profile
+        immediately after "citations?user=" and before "&hl=".
+    sections : list[str]
+        Sections of the profile to return. If None, return the default
+        sections selected by scholarly.
+
+    Returns
+    -------
+    Author
+        Full profile of the author.
+    """
+    if sections is None:
+        sections = []
+    profile = scholarly.search_author_id(id)
+    return scholarly.fill(profile, sections=sections)
+
+
 def _get_coauthors_from_pubs(
     papers: list[Publication],
     year_cutoff: int | None = None,
@@ -103,28 +128,3 @@ def _nsf_name_cleanup(coauthors: list[str]) -> list[str]:
         reordered_name = f"{name_parts[-1]}, {' '.join(name_parts[:-1])}"
         cleaned_coauthors.append(reordered_name)
     return cleaned_coauthors
-
-
-def _get_scholar_profile(id: str, sections: list[str] = None) -> Author:
-    """
-    Given a Google Scholar ID, return the full profile.
-
-    Parameters
-    ----------
-    id : str
-        Google Scholar ID of the author. This is the string of characters
-        that appears in the URL of the author's Google Scholar profile
-        immediately after "citations?user=" and before "&hl=".
-    sections : list[str]
-        Sections of the profile to return. If None, return the default
-        sections selected by scholarly.
-
-    Returns
-    -------
-    Author
-        Full profile of the author.
-    """
-    if sections is None:
-        sections = []
-    profile = scholarly.search_author_id(id)
-    return scholarly.fill(profile, sections=sections)
