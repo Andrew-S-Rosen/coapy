@@ -124,5 +124,7 @@ def _get_scholar_profile(id: str, sections: list[str] = None) -> Author:
     Author
         Full profile of the author.
     """
+    if sections is None:
+        sections = []
     profile = scholarly.search_author_id(id)
     return scholarly.fill(profile, sections=sections)
