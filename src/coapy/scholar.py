@@ -9,16 +9,16 @@ if TYPE_CHECKING:
     from scholarly.data_types import Author, Publication
 
 
-def get_coauthors(id: str = "lHBjgLsAAAAJ", years: int | None = 2) -> list[str]:
+def get_coauthors(scholar_id: str = "lHBjgLsAAAAJ", years: int | None = 2) -> list[str]:
     """
     Given a Google Scholar ID, return a list of coauthors from the past N years.
 
     Parameters
     ----------
-    id : str
+    scholar_id : str
         Google Scholar ID of the author. This is the string of characters
         that appears in the URL of the author's Google Scholar profile
-        immediately after "citations?user=" and before "&hl=".
+        immediately after "user=" and before "&hl=".
     years : int
         Number of years to look back for coauthors. Set to `None` for no limit.
 
@@ -30,20 +30,20 @@ def get_coauthors(id: str = "lHBjgLsAAAAJ", years: int | None = 2) -> list[str]:
     today = datetime.date.today()
     year_cutoff = (today.year - years) if years else None
 
-    profile = _get_scholar_profile(id)
+    profile = _get_scholar_profile(scholar_id)
 
     return _get_coauthors_from_pubs(
         profile["publications"], year_cutoff=year_cutoff, my_name=profile["name"]
     )
 
 
-def _get_scholar_profile(id: str, sections: list[str] = None) -> Author:
+def _get_scholar_profile(scholar_id: str, sections: list[str] = None) -> Author:
     """
     Given a Google Scholar ID, return the full profile.
 
     Parameters
     ----------
-    id : str
+    scholar_id : str
         Google Scholar ID of the author. This is the string of characters
         that appears in the URL of the author's Google Scholar profile
         immediately after "citations?user=" and before "&hl=".
@@ -58,7 +58,7 @@ def _get_scholar_profile(id: str, sections: list[str] = None) -> Author:
     """
     if sections is None:
         sections = []
-    profile = scholarly.search_author_id(id)
+    profile = scholarly.search_author_id(scholar_id)
     return scholarly.fill(profile, sections=sections)
 
 
