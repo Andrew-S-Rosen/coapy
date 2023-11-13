@@ -98,10 +98,10 @@ def _nsf_name_cleanup(coauthors: list[str]) -> list[str]:
         List of co-authors with names cleaned up.
     """
     cleaned_coauthors = []
-    for i, coauthor in enumerate(coauthors):
+    for coauthor in coauthors:
         name_parts = coauthor.split(" ")
         reordered_name = f"{name_parts[-1]}, {' '.join(name_parts[:-1])}"
-        cleaned_coauthors[i] = reordered_name
+        cleaned_coauthors.append(reordered_name)
     return cleaned_coauthors
 
 
