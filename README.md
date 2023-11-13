@@ -1,6 +1,6 @@
 # coapy
 
-![tests](https://github.com/quantum-accelerators/quacc/actions/workflows/tests.yaml/badge.svg)
+![tests](https://github.com/quantum-accelerators/coapy/actions/workflows/tests.yaml/badge.svg)
 
 A Python package for generating a list of collaborators suitable for an [NSF Collaborators and Other Affiliations (COA) document](https://www.nsf.gov/bfa/dias/policy/coa/coa_template.xlsx).
 
