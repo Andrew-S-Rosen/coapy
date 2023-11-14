@@ -10,6 +10,6 @@ Fetch your Google Scholar ID, which is the string of letters and numbers in the 
 from coapy.scholar import get_coauthors
 
 scholar_id = "lHBjgLsAAAAJ" # Google Scholar ID
-my_coauthors = get_coauthors(scholar_id)
+my_coauthors = get_coauthors(scholar_id=scholar_id)
 print(my_coauthors)
 ```
