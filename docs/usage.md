@@ -6,7 +6,7 @@ Fetch your Google Scholar ID, which is the string of letters and numbers in the 
 
 ## Examples
 
-If generating an NSF COA report, all you need to do is the following:
+If generating an NSF COA report, all you need to do is the following. By default, the code will write out a CSV file "coauthors.csv" to the current working directory.
 
 ```python
 from coapy.scholar import get_coauthors
