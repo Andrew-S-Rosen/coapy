@@ -8,5 +8,5 @@ You will need to have Python on your machine. If you do not, follow the instruct
 ## Installation
 
 ```bash
-pip install git+https://github.com/quantum-accelerators/coapy.git
+pip install git+https://github.com/Andrew-S-Rosen/coapy.git
 ```
