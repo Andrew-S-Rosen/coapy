@@ -4,12 +4,15 @@ import datetime
 from typing import TYPE_CHECKING
 
 from scholarly import scholarly
+from tqdm import tqdm
 
 if TYPE_CHECKING:
     from scholarly.data_types import Author, Publication
 
 
-def get_coauthors(scholar_id: str = "lHBjgLsAAAAJ", years_back: int | None = 2) -> list[str]:
+def get_coauthors(
+    scholar_id: str = "lHBjgLsAAAAJ", years_back: int | None = 2
+) -> list[str]:
     """
     Given a Google Scholar ID, return a list of coauthors from the past N years.
 
@@ -37,7 +40,7 @@ def get_coauthors(scholar_id: str = "lHBjgLsAAAAJ", years_back: int | None = 2) 
     )
 
 
-def _get_scholar_profile(scholar_id: str, sections: list[str] = None) -> Author:
+def _get_scholar_profile(scholar_id: str, sections: list[str] | None = None) -> Author:
     """
     Given a Google Scholar ID, return the full profile.
 
@@ -89,7 +92,7 @@ def _get_coauthors_from_pubs(
 
     # Fetch all co-authors from publications
     all_coauthors = []
-    for paper in papers:
+    for paper in tqdm(papers):
         paper_full = scholarly.fill(paper, sections=["authors"])
         coauthors = paper_full["bib"]["author"].split(" and ")
 
