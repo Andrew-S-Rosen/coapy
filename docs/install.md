@@ -7,6 +7,8 @@ You will need to have Python on your machine. If you do not, follow the instruct
 
 ## Installation
 
+In the terminal, run the following:
+
 ```bash
 pip install git+https://github.com/Andrew-S-Rosen/coapy.git
 ```
