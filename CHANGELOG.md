@@ -11,6 +11,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Added a progress bar
 - A CSV file will be written out by default
 
+### Fixed
+
+- Fixed `years_back` parsing
+
 ## [0.0.1]
 
 ### Added
