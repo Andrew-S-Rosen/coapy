@@ -11,7 +11,7 @@ If generating an NSF COA report, all you need to do is the following. By default
 ```python
 from coapy.scholar import get_coauthors
 
-scholar_id = "lHBjgLsAAAAJ" # Google Scholar ID
+scholar_id = "lHBjgLsAAAAJ"  # Google Scholar ID
 my_coauthors = get_coauthors(scholar_id=scholar_id)
 print(my_coauthors)
 ```
@@ -21,7 +21,7 @@ If for any reason you need to get >2 years of data, this can be modified as foll
 ```python
 from coapy.scholar import get_coauthors
 
-scholar_id = "lHBjgLsAAAAJ" # Google Scholar ID
+scholar_id = "lHBjgLsAAAAJ"  # Google Scholar ID
 my_coauthors = get_coauthors(scholar_id=scholar_id, years_back=4)
 print(my_coauthors)
 ```
