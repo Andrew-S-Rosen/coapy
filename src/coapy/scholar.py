@@ -98,15 +98,24 @@ def _get_coauthors_from_pubs(
         List of co-authors.
     """
 
+    # Filter by year
+    current_year = datetime.date.today().year
+    if year_cutoff:
+        papers_subset = [
+            paper
+            for paper in papers
+            if int(paper["bib"].get("pub_year", current_year)) >= year_cutoff
+        ]
+    else:
+        papers_subset = papers
+
     # Fetch all co-authors from publications
     all_coauthors = []
-    for paper in tqdm(papers):
+    for paper in tqdm(papers_subset):
         paper_full = scholarly.fill(paper, sections=["authors"])
         coauthors = paper_full["bib"]["author"].split(" and ")
 
-        pub_year = paper_full["bib"].get("pub_year")
-        if year_cutoff and pub_year and pub_year >= year_cutoff:
-            all_coauthors.extend(coauthors)
+        all_coauthors.extend(coauthors)
 
     # De-duplicate list of co-authors and remove your own name
     all_coauthors = list(set(all_coauthors))
