@@ -22,6 +22,6 @@ If for any reason you need to get >4 years of data, this can be modified as foll
 from coapy.scholar import get_coauthors
 
 scholar_id = "lHBjgLsAAAAJ"  # Google Scholar ID
-my_coauthors = get_coauthors(scholar_id=scholar_id, years_back=4)
+my_coauthors = get_coauthors(scholar_id=scholar_id, years_back=5)
 print(my_coauthors)
 ```
