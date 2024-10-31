@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 def get_coauthors(
     scholar_id: str = "lHBjgLsAAAAJ",
-    years_back: int | None = 2,
+    years_back: int | None = 4,
     filename: str | Path | None = "coauthors.csv",
 ) -> list[str]:
     """
