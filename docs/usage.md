@@ -16,7 +16,7 @@ my_coauthors = get_coauthors(scholar_id=scholar_id)
 print(my_coauthors)
 ```
 
-If for any reason you need to get >2 years of data, this can be modified as follows:
+If for any reason you need to get >4 years of data, this can be modified as follows:
 
 ```python
 from coapy.scholar import get_coauthors
