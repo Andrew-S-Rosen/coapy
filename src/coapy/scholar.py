@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import math
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -77,7 +78,7 @@ def _get_coauthors_from_pubs(
     papers: list[Publication],
     year_cutoff: int | None = None,
     my_name: str | None = None,
-) -> list[str]:
+) -> dict[str, int]:
     """
     Get a de-duplicated list of co-authors from a list of publications.
 
@@ -94,39 +95,57 @@ def _get_coauthors_from_pubs(
 
     Returns
     -------
-    list[str]
-        List of co-authors.
+    dict[str, int]
+        Dictionary of {co-author: most recent year of collaboration}.
     """
+
+    # Set year_cutoff to infinity if not provided
+    if year_cutoff is None:
+        year_cutoff = math.inf
 
     # Filter by year
     current_year = datetime.date.today().year
-    if year_cutoff:
-        papers_subset = [
-            paper
-            for paper in papers
-            if int(paper["bib"].get("pub_year", current_year)) >= year_cutoff
-        ]
-    else:
-        papers_subset = papers
+    paper_subset = []
+    year_subset = []
+    for paper in papers:
+        pub_year = int(paper["bib"].get("pub_year", current_year))
+        if pub_year >= year_cutoff:
+            paper_subset.append(paper)
+            year_subset.append(pub_year)
 
     # Fetch all co-authors from publications
     all_coauthors = []
-    for paper in tqdm(papers_subset):
-        paper_full = scholarly.fill(paper, sections=["authors"])
+    all_years = []
+    for paper, pub_year in tqdm(
+        zip(paper_subset, year_subset), total=len(paper_subset)
+    ):
+        paper_full = scholarly.fill(paper, sections=["coauthors"])
         coauthors = paper_full["bib"]["author"].split(" and ")
 
         all_coauthors.extend(coauthors)
-
-    # De-duplicate list of co-authors and remove your own name
-    all_coauthors = list(set(all_coauthors))
-    if my_name and my_name in all_coauthors:
-        all_coauthors.remove(my_name)
+        all_years.extend([pub_year] * len(coauthors))
 
     # Clean up list of co-authors
     all_coauthors = _nsf_name_cleanup(all_coauthors)
-    all_coauthors.sort()
+    all_coauthors, all_years = zip(*sorted(zip(all_coauthors, all_years)))
 
-    return all_coauthors
+    # Convert the result back to lists
+    all_coauthors = list(all_coauthors)
+    all_years = list(all_years)
+
+    # De-duplicate and store most recent year
+    coauthor_year_map = {}
+    for coauthor, year in zip(all_coauthors, all_years):
+        if coauthor in coauthor_year_map:
+            coauthor_year_map[coauthor] = max(coauthor_year_map[coauthor], year)
+        else:
+            coauthor_year_map[coauthor] = year
+
+    # Remove your own name
+    if my_name:
+        coauthor_year_map.pop(my_name, None)
+
+    return coauthor_year_map
 
 
 def _nsf_name_cleanup(coauthors: list[str]) -> list[str]:
@@ -151,14 +170,16 @@ def _nsf_name_cleanup(coauthors: list[str]) -> list[str]:
     return cleaned_coauthors
 
 
-def _dump_to_csv(co_authors: list[str], filename: str | Path = "coauthors.csv") -> None:
+def _dump_to_csv(
+    co_authors: dict[str, int], filename: str | Path = "coauthors.csv"
+) -> None:
     """
     Dump a list of coauthors to a CSV file.
 
     Parameters
     ----------
-    co_authors : list[str]
-        List of coauthors.
+    co_authors : dict[str, int]
+        List of coauthors with year of most recent collaboration.
     filename : str | Path
         Name of the CSV file to write to.
 
@@ -168,5 +189,5 @@ def _dump_to_csv(co_authors: list[str], filename: str | Path = "coauthors.csv") 
     """
 
     with Path(filename).open(mode="w", encoding="utf-8") as f:
-        for coauthor in co_authors:
-            f.write(f"{coauthor}\n")
+        for coauthor, year in co_authors.items():
+            f.write(f"{coauthor}, {year}\n")
