@@ -1,11 +1,8 @@
 name: docs
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -20,10 +17,10 @@ jobs:
 
     steps:
       - name: Check out repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
@@ -31,13 +28,23 @@ jobs:
 
       - name: Install pip packages
         run: |
-          pip install -r tests/requirements.txt
-          pip install .[docs]
+          pip install uv
+          uv pip install --system "quacc[docs] @ ."
+
+      - name: Generate reference pages
+        run: python .github/scripts/gen_ref_pages.py
+
+      - name: Generate zensical.toml
+        run: python .github/scripts/gen_zensical_toml.py
 
       - name: Build docs
-        run: mkdocs build
+        run: |
+          zensical build --clean
         id: build_docs
 
-      - name: Rebuild and deploy docs
-        run: mkdocs gh-deploy --force
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
         if: github.ref == 'refs/heads/main' && steps.build_docs.outcome == 'success'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
