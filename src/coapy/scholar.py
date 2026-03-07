@@ -15,7 +15,7 @@ def get_coauthors(
     scholar_id: str = "lHBjgLsAAAAJ",
     years_back: int | None = 4,
     filename: str | Path | None = "coauthors.csv",
-) -> list[str]:
+) -> list[tuple[str, int]]:
     """
     Given a Google Scholar ID, return a list of coauthors from the past N years.
 
@@ -32,8 +32,8 @@ def get_coauthors(
 
     Returns
     -------
-    list[str]
-        List of coauthors from the past N years.
+    list[tuple[str, int]]
+        List of (coauthor, most_recent_year) tuples from the past N years.
     """
     today = datetime.date.today()
     year_cutoff = (today.year - years_back) if years_back else None
@@ -70,14 +70,14 @@ def _get_scholar_profile(scholar_id: str, sections: list[str] | None = None) -> 
     if sections is None:
         sections = []
     profile = scholarly.search_author_id(scholar_id)
-    return scholarly.fill(profile, sections=sections)
+    return scholarly.fill(profile, sections=sections)  # type: ignore
 
 
 def _get_coauthors_from_pubs(
     papers: list[Publication],
     year_cutoff: int | None = None,
     my_name: str | None = None,
-) -> list[str]:
+) -> list[tuple[str, int]]:
     """
     Get a de-duplicated list of co-authors from a list of publications.
 
@@ -94,8 +94,8 @@ def _get_coauthors_from_pubs(
 
     Returns
     -------
-    list[str]
-        List of co-authors.
+    list[tuple[str, int]]
+        List of (coauthor, most_recent_year) tuples.
     """
 
     # Filter by year
@@ -104,29 +104,34 @@ def _get_coauthors_from_pubs(
         papers_subset = [
             paper
             for paper in papers
-            if int(paper["bib"].get("pub_year", current_year)) >= year_cutoff
+            if int(paper["bib"].get("pub_year", current_year)) >= year_cutoff  # type: ignore
         ]
     else:
         papers_subset = papers
 
-    # Fetch all co-authors from publications
-    all_coauthors = []
+    # Fetch all co-authors from publications, tracking the most recent year per author
+    coauthor_years: dict[str, int] = {}
     for paper in tqdm(papers_subset):
-        paper_full = scholarly.fill(paper, sections=["authors"])
+        paper_full = scholarly.fill(paper, sections=["authors"])  # type: ignore
+        pub_year = int(paper_full["bib"].get("pub_year", current_year))
         coauthors = paper_full["bib"]["author"].split(" and ")
+        for coauthor in coauthors:
+            if coauthor not in coauthor_years or pub_year > coauthor_years[coauthor]:
+                coauthor_years[coauthor] = pub_year
 
-        all_coauthors.extend(coauthors)
+    # Remove your own name
+    if my_name and my_name in coauthor_years:
+        del coauthor_years[my_name]
 
-    # De-duplicate list of co-authors and remove your own name
-    all_coauthors = list(set(all_coauthors))
-    if my_name and my_name in all_coauthors:
-        all_coauthors.remove(my_name)
+    # Clean up names and pair with most recent year
+    names = list(coauthor_years.keys())
+    cleaned_names = _nsf_name_cleanup(names)
+    result = [
+        (cleaned, coauthor_years[orig]) for orig, cleaned in zip(names, cleaned_names)
+    ]
+    result.sort()
 
-    # Clean up list of co-authors
-    all_coauthors = _nsf_name_cleanup(all_coauthors)
-    all_coauthors.sort()
-
-    return all_coauthors
+    return result
 
 
 def _nsf_name_cleanup(coauthors: list[str]) -> list[str]:
@@ -151,14 +156,16 @@ def _nsf_name_cleanup(coauthors: list[str]) -> list[str]:
     return cleaned_coauthors
 
 
-def _dump_to_csv(co_authors: list[str], filename: str | Path = "coauthors.csv") -> None:
+def _dump_to_csv(
+    co_authors: list[tuple[str, int]], filename: str | Path = "coauthors.csv"
+) -> None:
     """
-    Dump a list of coauthors to a CSV file.
+    Dump a list of coauthors and their most recent affiliation year to a CSV file.
 
     Parameters
     ----------
-    co_authors : list[str]
-        List of coauthors.
+    co_authors : list[tuple[str, int]]
+        List of (coauthor, most_recent_year) tuples.
     filename : str | Path
         Name of the CSV file to write to.
 
@@ -168,5 +175,6 @@ def _dump_to_csv(co_authors: list[str], filename: str | Path = "coauthors.csv") 
     """
 
     with Path(filename).open(mode="w", encoding="utf-8") as f:
-        for coauthor in co_authors:
-            f.write(f"{coauthor}\n")
+        for coauthor, year in co_authors:
+            last, first = coauthor.split(", ", 1)
+            f.write(f"{last},{first},{year}\n")
