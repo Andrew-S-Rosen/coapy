@@ -18,6 +18,7 @@ repo_url: https://github.com/Quantum-Accelerators/coapy/
 edit_uri: blob/main/docs/
 
 theme:
+  variant: classic
   features:
     - content.action.edit
     - content.code.copy
@@ -35,7 +36,6 @@ theme:
     - search.share
     - header.autohide
     - toc.follow
-  name: material
   palette:
     primary: orange
     scheme: slate
@@ -80,15 +80,12 @@ plugins:
   - search:
       separator: '[\s\-,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
   - autorefs
-  - social
-  - offline
   - mkdocstrings:
       default_handler: python
       handlers:
         python:
           import:
             - https://docs.python.org/3/objects.inv
-            - https://scholarly.readthedocs.io/en/stable/objects.inv
           options:
             docstring_style: numpy
             docstring_section_style: list
