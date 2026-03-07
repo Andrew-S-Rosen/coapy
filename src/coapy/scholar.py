@@ -1,30 +1,33 @@
 from __future__ import annotations
 
+import csv
 import datetime
+import json
 from pathlib import Path
-from typing import TYPE_CHECKING
 
-from scholarly import scholarly
+import requests
 from tqdm import tqdm
 
-if TYPE_CHECKING:
-    from scholarly.data_types import Author, Publication
+OPENALEX_API = "https://api.openalex.org"
+ORCID_API = "https://pub.orcid.org/v3.0"
 
 
 def get_coauthors(
-    scholar_id: str = "lHBjgLsAAAAJ",
+    orcid: str,
     years_back: int | None = 4,
     filename: str | Path | None = "coauthors.csv",
 ) -> list[tuple[str, int, str]]:
     """
-    Given a Google Scholar ID, return a list of coauthors from the past N years.
+    Given an ORCID, return a list of coauthors from the past N years.
+
+    The paper list is sourced from the author's ORCID profile (user-curated),
+    and co-author details are fetched from OpenAlex by DOI.
 
     Parameters
     ----------
-    scholar_id : str
-        Google Scholar ID of the author. This is the string of characters
-        that appears in the URL of the author's Google Scholar profile
-        immediately after "user=" and before "&hl=".
+    orcid : str
+        ORCID of the author (e.g., "0000-0002-2365-7464"). Find yours at
+        https://orcid.org.
     years_back : int | None
         Number of years to look back for coauthors. Set to `None` for no limit.
     filename : str | Path | None
@@ -38,127 +41,191 @@ def get_coauthors(
     today = datetime.date.today()
     year_cutoff = (today.year - years_back) if years_back else None
 
-    profile = _get_scholar_profile(scholar_id)
-
-    co_authors = _get_coauthors_from_pubs(
-        profile["publications"], year_cutoff=year_cutoff, my_name=profile["name"]
+    openalex_id, my_name = _resolve_orcid(orcid)
+    orcid_papers = _fetch_orcid_works(orcid, year_cutoff=year_cutoff)
+    works = _fetch_works_from_openalex(orcid_papers)
+    co_authors = _get_coauthors_from_works(
+        works, my_openalex_id=openalex_id, my_name=my_name
     )
+
     if filename:
         _dump_to_csv(co_authors, filename)
     return co_authors
 
 
-def _get_scholar_profile(scholar_id: str, sections: list[str] | None = None) -> Author:
+def _resolve_orcid(orcid: str) -> tuple[str, str]:
     """
-    Given a Google Scholar ID, return the full profile.
+    Resolve an ORCID to an OpenAlex author ID and display name.
 
     Parameters
     ----------
-    scholar_id : str
-        Google Scholar ID of the author. This is the string of characters
-        that appears in the URL of the author's Google Scholar profile
-        immediately after "citations?user=" and before "&hl=".
-    sections : list[str] | None
-        Sections of the profile to return. If None, return the default
-        sections selected by scholarly.
+    orcid : str
+        ORCID of the author (e.g., "0000-0002-2365-7464").
 
     Returns
     -------
-    Author
-        Full profile of the author.
+    tuple[str, str]
+        The OpenAlex author ID (short form) and display name.
     """
-    if sections is None:
-        sections = []
-    profile = scholarly.search_author_id(scholar_id)
-    return scholarly.fill(profile, sections=sections)  # type: ignore
+    response = requests.get(
+        f"{OPENALEX_API}/authors/https://orcid.org/{orcid}",
+        timeout=30,
+    )
+    response.raise_for_status()
+    author = json.loads(response.content)
+    return author["id"].split("/")[-1], author["display_name"]
 
 
-def _get_coauthors_from_pubs(
-    papers: list[Publication],
-    year_cutoff: int | None = None,
-    my_name: str | None = None,
-) -> list[tuple[str, int, str]]:
+def _fetch_orcid_works(
+    orcid: str, year_cutoff: int | None = None
+) -> list[dict]:
     """
-    Get a de-duplicated list of co-authors from a list of publications.
+    Fetch the author's papers from their ORCID profile.
+
+    Only papers with a DOI are returned, as those are needed for OpenAlex lookup.
 
     Parameters
     ----------
-    papers : list[Publication]
-        List of publications.
+    orcid : str
+        ORCID of the author.
     year_cutoff : int | None
-        Year before which to ignore publications. If set to `None`, all
-        publications will be considered.
+        Earliest publication year to include. Papers with no year are always included.
+
+    Returns
+    -------
+    list[dict]
+        List of {"doi": str, "year": int | None} dicts.
+    """
+    response = requests.get(
+        f"{ORCID_API}/{orcid}/works",
+        headers={"Accept": "application/json"},
+        timeout=30,
+    )
+    response.raise_for_status()
+    data = json.loads(response.content)
+
+    papers = []
+    for group in data.get("group", []):
+        summaries = group.get("work-summary", [])
+        if not summaries:
+            continue
+        summary = summaries[0]
+
+        # Get publication year
+        pub_date = summary.get("publication-date") or {}
+        year_str = (pub_date.get("year") or {}).get("value")
+        year = int(year_str) if year_str else None
+
+        if year_cutoff and year and year < year_cutoff:
+            continue
+
+        # Find DOI
+        doi = None
+        for ext_id in (summary.get("external-ids") or {}).get("external-id", []):
+            if ext_id.get("external-id-type") == "doi":
+                doi = ext_id.get("external-id-value", "").strip().lower()
+                break
+
+        if doi:
+            papers.append({"doi": doi, "year": year})
+
+    return papers
+
+
+def _fetch_works_from_openalex(papers: list[dict]) -> list[dict]:
+    """
+    Look up each paper in OpenAlex by DOI to retrieve authorship and institution data.
+
+    Papers not found in OpenAlex are silently skipped.
+
+    Parameters
+    ----------
+    papers : list[dict]
+        List of {"doi": str, "year": int | None} dicts from ORCID.
+
+    Returns
+    -------
+    list[dict]
+        List of OpenAlex work records.
+    """
+    works = []
+    for paper in tqdm(papers, desc="Fetching paper details"):
+        response = requests.get(
+            f"{OPENALEX_API}/works/https://doi.org/{paper['doi']}",
+            timeout=30,
+        )
+        if response.status_code == 404:
+            continue
+        response.raise_for_status()
+        work = json.loads(response.content)
+        # Fall back to ORCID year if OpenAlex doesn't have one
+        if not work.get("publication_year") and paper.get("year"):
+            work["publication_year"] = paper["year"]
+        works.append(work)
+    return works
+
+
+def _get_coauthors_from_works(
+    works: list[dict],
+    my_openalex_id: str,
+    my_name: str | None = None,
+) -> list[tuple[str, int, str]]:
+    """
+    Get a de-duplicated list of co-authors from a list of works.
+
+    For each co-author, tracks the most recent year of collaboration and their
+    institutional affiliation from that paper.
+
+    Parameters
+    ----------
+    works : list[dict]
+        List of work records from the OpenAlex API.
+    my_openalex_id : str
+        OpenAlex author ID of the user, used to exclude them from results.
     my_name : str | None
-        Name of the author. If set to `None`, the author will still be
-        included in the list of co-authors.
+        Display name of the user, used as a fallback for self-exclusion.
 
     Returns
     -------
     list[tuple[str, int, str]]
         List of (coauthor, most_recent_year, affiliation) tuples.
     """
-
-    # Filter by year
     current_year = datetime.date.today().year
-    if year_cutoff:
-        papers_subset = [
-            paper
-            for paper in papers
-            if int(paper["bib"].get("pub_year", current_year)) >= year_cutoff  # type: ignore
-        ]
-    else:
-        papers_subset = papers
+    my_id = my_openalex_id.split("/")[-1]
 
-    # Fetch all co-authors from publications, tracking the most recent year per author
-    coauthor_years: dict[str, int] = {}
-    for paper in tqdm(papers_subset):
-        paper_full = scholarly.fill(paper, sections=["authors"])  # type: ignore
-        pub_year = int(paper_full["bib"].get("pub_year", current_year))
-        coauthors = paper_full["bib"]["author"].split(" and ")
-        for coauthor in coauthors:
-            if coauthor not in coauthor_years or pub_year > coauthor_years[coauthor]:
-                coauthor_years[coauthor] = pub_year
+    # author_id -> (display_name, most_recent_year, affiliation_at_that_year)
+    coauthor_data: dict[str, tuple[str, int, str]] = {}
 
-    # Remove your own name
-    if my_name and my_name in coauthor_years:
-        del coauthor_years[my_name]
+    for work in works:
+        pub_year = work.get("publication_year") or current_year
+        for authorship in work.get("authorships") or []:
+            author = authorship.get("author") or {}
+            author_id = (author.get("id") or "").split("/")[-1]
+            author_name = author.get("display_name", "")
 
-    # Clean up names and pair with most recent year and affiliation
-    names = list(coauthor_years.keys())
-    cleaned_names = _nsf_name_cleanup(names)
+            if author_id == my_id:
+                continue
+            if my_name and author_name == my_name:
+                continue
+
+            institutions = authorship.get("institutions") or []
+            affiliation = " / ".join(
+                inst["display_name"] for inst in institutions if inst.get("display_name")
+            )
+
+            if author_id not in coauthor_data or pub_year > coauthor_data[author_id][1]:
+                coauthor_data[author_id] = (author_name, pub_year, affiliation)
+
+    # Clean up names and build result
+    entries = list(coauthor_data.values())
+    cleaned_names = _nsf_name_cleanup([name for name, _, _ in entries])
     result = [
-        (cleaned, coauthor_years[orig], _get_affiliation(orig))
-        for orig, cleaned in tqdm(
-            zip(names, cleaned_names),
-            desc="Fetching affiliations",
-            total=len(names),
-        )
+        (cleaned, year, affiliation)
+        for cleaned, (_, year, affiliation) in zip(cleaned_names, entries)
     ]
     result.sort()
 
     return result
-
-
-def _get_affiliation(name: str) -> str:
-    """
-    Search Google Scholar for an author by name and return their affiliation.
-
-    Parameters
-    ----------
-    name : str
-        Full name of the author as it appears on Google Scholar.
-
-    Returns
-    -------
-    str
-        Affiliation string from the author's Google Scholar profile, or an
-        empty string if no profile is found.
-    """
-    try:
-        author = next(scholarly.search_author(name))
-        return author.get("affiliation", "")
-    except StopIteration:
-        return ""
 
 
 def _nsf_name_cleanup(coauthors: list[str]) -> list[str]:
@@ -201,8 +268,8 @@ def _dump_to_csv(
     -------
     None
     """
-
-    with Path(filename).open(mode="w", encoding="utf-8") as f:
+    with Path(filename).open(mode="w", encoding="utf-8-sig", newline="") as f:
+        writer = csv.writer(f)
         for coauthor, year, affiliation in co_authors:
             last, first = coauthor.split(", ", 1)
-            f.write(f"{last},{first},{year},{affiliation}\n")
+            writer.writerow([last, first, year, affiliation])
