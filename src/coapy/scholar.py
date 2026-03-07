@@ -216,8 +216,26 @@ def _get_coauthors_from_works(
             if author_id not in coauthor_data or pub_year > coauthor_data[author_id][1]:
                 coauthor_data[author_id] = (author_name, pub_year, affiliation)
 
+    # Merge duplicate entries that share the same last name + first initial
+    # (handles the same person appearing under different OpenAlex IDs or name variants)
+    deduped: dict[str, tuple[str, int, str]] = {}
+    for name, year, affiliation in coauthor_data.values():
+        name_parts = name.split()
+        if not name_parts:
+            continue
+        last = name_parts[-1].lower()
+        first_initial = name_parts[0][0].lower() if len(name_parts) > 1 else ""
+        key = f"{last},{first_initial}"
+        if key not in deduped:
+            deduped[key] = (name, year, affiliation)
+        else:
+            prev_name, prev_year, prev_affiliation = deduped[key]
+            # Keep most recent year; prefer the entry with an affiliation
+            if year > prev_year or (year == prev_year and affiliation and not prev_affiliation):
+                deduped[key] = (name, year, affiliation)
+
     # Clean up names and build result
-    entries = list(coauthor_data.values())
+    entries = list(deduped.values())
     cleaned_names = _nsf_name_cleanup([name for name, _, _ in entries])
     result = [
         (cleaned, year, affiliation)
