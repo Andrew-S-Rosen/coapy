@@ -18,6 +18,7 @@ repo_url: https://github.com/Quantum-Accelerators/coapy/
 edit_uri: blob/main/docs/
 
 theme:
+  name: material
   variant: classic
   features:
     - content.action.edit

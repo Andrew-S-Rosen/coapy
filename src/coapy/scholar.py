@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import csv
 import datetime
 import json
 from pathlib import Path
 
+import pandas as pd
 import requests
 from tqdm import tqdm
 
@@ -15,7 +15,7 @@ ORCID_API = "https://pub.orcid.org/v3.0"
 def get_coauthors(
     orcid: str,
     years_back: int | None = 4,
-    filename: str | Path | None = "coauthors.csv",
+    filename: str | Path | None = "coauthors.xlsx",
 ) -> list[tuple[str, int, str]]:
     """
     Given an ORCID, return a list of coauthors from the past N years.
@@ -31,7 +31,7 @@ def get_coauthors(
     years_back : int | None
         Number of years to look back for coauthors. Set to `None` for no limit.
     filename : str | Path | None
-        Path to the CSV file to write to, if any.
+        Path to the Excel (.xlsx) file to write to, if any.
 
     Returns
     -------
@@ -49,7 +49,7 @@ def get_coauthors(
     )
 
     if filename:
-        _dump_to_csv(co_authors, filename)
+        _dump_to_excel(co_authors, filename)
     return co_authors
 
 
@@ -268,26 +268,27 @@ def _nsf_name_cleanup(coauthors: list[str]) -> list[str]:
     return cleaned_coauthors
 
 
-def _dump_to_csv(
-    co_authors: list[tuple[str, int, str]], filename: str | Path = "coauthors.csv"
+def _dump_to_excel(
+    co_authors: list[tuple[str, int, str]], filename: str | Path = "coauthors.xlsx"
 ) -> None:
     """
     Dump a list of coauthors, their most recent collaboration year, and their
-    affiliation to a CSV file.
+    affiliation to an Excel (.xlsx) file.
 
     Parameters
     ----------
     co_authors : list[tuple[str, int, str]]
         List of (coauthor, most_recent_year, affiliation) tuples.
     filename : str | Path
-        Name of the CSV file to write to.
+        Name of the Excel file to write to.
 
     Returns
     -------
     None
     """
-    with Path(filename).open(mode="w", encoding="utf-8-sig", newline="") as f:
-        writer = csv.writer(f)
-        for coauthor, year, affiliation in co_authors:
-            last, first = coauthor.split(", ", 1)
-            writer.writerow([last, first, year, affiliation])
+    rows = []
+    for coauthor, year, affiliation in co_authors:
+        last, first = coauthor.split(", ", 1)
+        rows.append([last, first, year, affiliation])
+    df = pd.DataFrame(rows, columns=["Last Name", "First Name", "Most Recent Year", "Affiliation(s)"])
+    df.to_excel(filename, index=False)

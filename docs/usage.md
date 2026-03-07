@@ -6,7 +6,7 @@ Fetch your ORCID, which is a 16-digit identifier in the format `0000-0000-0000-0
 
 ## Examples
 
-If generating an NSF COA report, all you need to do is the following. By default, the code will write out a CSV file `"coauthors.csv"` to the current working directory with four columns: last name, first name, most recent collaboration year, and institutional affiliation(s).
+If generating an NSF COA report, all you need to do is the following. By default, the code will write out an Excel file `"coauthors.xlsx"` to the current working directory with four columns: last name, first name, most recent collaboration year, and institutional affiliation(s).
 
 ```python
 from coapy.scholar import get_coauthors
