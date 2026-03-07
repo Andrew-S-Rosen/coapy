@@ -1,21 +1,42 @@
-"""Generate the code reference pages and navigation."""
+"""
+Generate docs/reference/ files to disk.
+This is roughly equivalent to what the `mkdocs-gen-files` plugin would have done.
+"""
+
 from __future__ import annotations
+
 from pathlib import Path
-import mkdocs_gen_files
-nav = mkdocs_gen_files.Nav()
+
+out_dir = Path("docs/reference")
+out_dir.mkdir(parents=True, exist_ok=True)
+
+nav_lines = []
+seen_dirs: set[tuple[str, ...]] = set()
+
 for path in sorted(Path("src").rglob("*.py")):
     module_path = path.relative_to("src").with_suffix("")
     doc_path = path.relative_to("src").with_suffix(".md")
-    full_doc_path = Path("reference", doc_path)
+    full_doc_path = out_dir / doc_path
+
     parts = tuple(module_path.parts)
     ignore = ["_cli", "_version", "__init__", "__main__"]
-    skip = any(p in ignore for p in parts)
-    if skip:
+    if any(p in ignore for p in parts):
         continue
-    nav[parts] = doc_path.as_posix()
-    with mkdocs_gen_files.open(full_doc_path, "w") as fd:
-        ident = ".".join(parts)
-        fd.write(f"::: {ident}")
-    mkdocs_gen_files.set_edit_path(full_doc_path, Path("..") / path)
-with mkdocs_gen_files.open(Path("reference", "SUMMARY.md"), "w") as nav_file:
-    nav_file.writelines(nav.build_literate_nav())
+
+    full_doc_path.parent.mkdir(parents=True, exist_ok=True)
+    full_doc_path.write_text(f"::: {'.'.join(parts)}\n")
+
+    # Emit section headers for intermediate directories not yet seen
+    for i in range(1, len(parts)):
+        dir_key = parts[:i]
+        if dir_key not in seen_dirs:
+            seen_dirs.add(dir_key)
+            indent = "    " * (len(dir_key) - 1)
+            nav_lines.append(f"{indent}* {dir_key[-1]}\n")
+
+    # Emit leaf link
+    name = parts[-1]
+    indent = "    " * (len(parts) - 1)
+    nav_lines.append(f"{indent}* [{name}]({doc_path.as_posix()})\n")
+
+(out_dir / "SUMMARY.md").write_text("".join(nav_lines))
