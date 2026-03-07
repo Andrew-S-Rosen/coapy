@@ -1,0 +1,120 @@
+[project]
+site_name = "coapy"
+site_url = "https://quantum-accelerators.github.io/coapy/"
+site_description = "A Python package to generate collaborator info for NSF COA forms"
+site_author = "Andrew S. Rosen"
+repo_url = "https://github.com/Quantum-Accelerators/coapy/"
+edit_uri = "blob/main/docs/"
+use_directory_urls = false
+
+nav = [
+    { "Home" = "index.md" },
+    { "Installation" = [
+        "install.md",
+    ] },
+    { "Usage" = [
+        "usage.md",
+    ] },
+    { "Code Documentation" = "reference/" },
+    { "About" = [
+        "about/changelog.md",
+        "about/conduct.md",
+        "about/license.md",
+    ] },
+]
+
+[project.theme]
+features = [
+    "content.action.edit",
+    "content.code.copy",
+    "content.code.select",
+    "content.code.annotate",
+    "content.tabs.link",
+    "content.tooltips",
+    "navigation.footer",
+    "navigation.path",
+    "navigation.tracking",
+    "navigation.sections",
+    "navigation.top",
+    "search.highlight",
+    "search.suggest",
+    "search.share",
+    "header.autohide",
+    "toc.follow",
+]
+
+[project.theme.palette]
+primary = "orange"
+scheme = "slate"
+
+[project.markdown_extensions.abbr]
+[project.markdown_extensions.admonition]
+[project.markdown_extensions.attr_list]
+[project.markdown_extensions.def_list]
+[project.markdown_extensions.footnotes]
+[project.markdown_extensions.md_in_html]
+
+[project.markdown_extensions.toc]
+permalink = true
+
+[project.markdown_extensions.pymdownx.arithmatex]
+generic = true
+
+[project.markdown_extensions.pymdownx.betterem]
+smart_enable = "all"
+
+[project.markdown_extensions.pymdownx.caret]
+[project.markdown_extensions.pymdownx.details]
+
+[project.markdown_extensions.pymdownx.highlight]
+anchor_linenums = true
+line_spans = "__span"
+pygments_lang_class = true
+
+[project.markdown_extensions.pymdownx.inlinehilite]
+[project.markdown_extensions.pymdownx.keys]
+[project.markdown_extensions.pymdownx.magiclink]
+[project.markdown_extensions.pymdownx.mark]
+[project.markdown_extensions.pymdownx.snippets]
+[project.markdown_extensions.pymdownx.smartsymbols]
+
+[project.markdown_extensions.pymdownx.superfences]
+custom_fences = [
+    { name = "mermaid", class = "mermaid", format = "pymdownx.superfences.fence_code_format" },
+]
+
+[project.markdown_extensions.pymdownx.tabbed]
+alternate_style = true
+
+[project.markdown_extensions.pymdownx.tasklist]
+custom_checkbox = true
+
+[project.markdown_extensions.pymdownx.tilde]
+
+[project.plugins.search]
+separator = '[\\s\\-,:!=\\[\\]()\"`/]+|\\.(?!\\d)|&[lg]t;|(?!\\b)(?=[A-Z][a-z])'
+
+[project.plugins.autorefs]
+
+[project.plugins.mkdocstrings]
+default_handler = "python"
+
+[project.plugins.mkdocstrings.handlers.python]
+inventories = [
+    "https://docs.python.org/3/objects.inv",
+]
+
+[project.plugins.mkdocstrings.handlers.python.options]
+docstring_style = "numpy"
+docstring_section_style = "list"
+separate_signature = true
+merge_init_into_class = true
+
+[project.plugins.mkdocstrings.handlers.python.options.docstring_options]
+ignore_init_summary = true
+
+[project.plugins.gen-files]
+scripts = ["docs/gen_ref_pages.py"]
+
+[project.plugins.literate-nav]
+nav_file = "SUMMARY.md"
