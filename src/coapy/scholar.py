@@ -13,7 +13,7 @@ ORCID_API = "https://pub.orcid.org/v3.0"
 
 
 def get_coauthors(
-    orcid: str,
+    orcid: str = "0000-0002-0141-7006",
     years_back: int | None = 4,
     filename: str | Path | None = "coauthors.xlsx",
 ) -> list[tuple[str, int, str]]:
@@ -76,9 +76,7 @@ def _resolve_orcid(orcid: str) -> tuple[str, str]:
     return author["id"].split("/")[-1], author["display_name"]
 
 
-def _fetch_orcid_works(
-    orcid: str, year_cutoff: int | None = None
-) -> list[dict]:
+def _fetch_orcid_works(orcid: str, year_cutoff: int | None = None) -> list[dict]:
     """
     Fetch the author's papers from their ORCID profile.
 
@@ -210,7 +208,9 @@ def _get_coauthors_from_works(
 
             institutions = authorship.get("institutions") or []
             affiliation = " / ".join(
-                inst["display_name"] for inst in institutions if inst.get("display_name")
+                inst["display_name"]
+                for inst in institutions
+                if inst.get("display_name")
             )
 
             if author_id not in coauthor_data or pub_year > coauthor_data[author_id][1]:
@@ -231,7 +231,9 @@ def _get_coauthors_from_works(
         else:
             prev_name, prev_year, prev_affiliation = deduped[key]
             # Keep most recent year; prefer the entry with an affiliation
-            if year > prev_year or (year == prev_year and affiliation and not prev_affiliation):
+            if year > prev_year or (
+                year == prev_year and affiliation and not prev_affiliation
+            ):
                 deduped[key] = (name, year, affiliation)
 
     # Clean up names and build result
@@ -290,5 +292,7 @@ def _dump_to_excel(
     for coauthor, year, affiliation in co_authors:
         last, first = coauthor.split(", ", 1)
         rows.append([last, first, year, affiliation])
-    df = pd.DataFrame(rows, columns=["Last Name", "First Name", "Most Recent Year", "Affiliation(s)"])
+    df = pd.DataFrame(
+        rows, columns=["Last Name", "First Name", "Most Recent Year", "Affiliation(s)"]
+    )
     df.to_excel(filename, index=False)
