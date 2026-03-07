@@ -15,7 +15,7 @@ def get_coauthors(
     scholar_id: str = "lHBjgLsAAAAJ",
     years_back: int | None = 4,
     filename: str | Path | None = "coauthors.csv",
-) -> list[tuple[str, int]]:
+) -> list[tuple[str, int, str]]:
     """
     Given a Google Scholar ID, return a list of coauthors from the past N years.
 
@@ -32,8 +32,8 @@ def get_coauthors(
 
     Returns
     -------
-    list[tuple[str, int]]
-        List of (coauthor, most_recent_year) tuples from the past N years.
+    list[tuple[str, int, str]]
+        List of (coauthor, most_recent_year, affiliation) tuples from the past N years.
     """
     today = datetime.date.today()
     year_cutoff = (today.year - years_back) if years_back else None
@@ -77,7 +77,7 @@ def _get_coauthors_from_pubs(
     papers: list[Publication],
     year_cutoff: int | None = None,
     my_name: str | None = None,
-) -> list[tuple[str, int]]:
+) -> list[tuple[str, int, str]]:
     """
     Get a de-duplicated list of co-authors from a list of publications.
 
@@ -94,8 +94,8 @@ def _get_coauthors_from_pubs(
 
     Returns
     -------
-    list[tuple[str, int]]
-        List of (coauthor, most_recent_year) tuples.
+    list[tuple[str, int, str]]
+        List of (coauthor, most_recent_year, affiliation) tuples.
     """
 
     # Filter by year
@@ -123,15 +123,42 @@ def _get_coauthors_from_pubs(
     if my_name and my_name in coauthor_years:
         del coauthor_years[my_name]
 
-    # Clean up names and pair with most recent year
+    # Clean up names and pair with most recent year and affiliation
     names = list(coauthor_years.keys())
     cleaned_names = _nsf_name_cleanup(names)
     result = [
-        (cleaned, coauthor_years[orig]) for orig, cleaned in zip(names, cleaned_names)
+        (cleaned, coauthor_years[orig], _get_affiliation(orig))
+        for orig, cleaned in tqdm(
+            zip(names, cleaned_names),
+            desc="Fetching affiliations",
+            total=len(names),
+        )
     ]
     result.sort()
 
     return result
+
+
+def _get_affiliation(name: str) -> str:
+    """
+    Search Google Scholar for an author by name and return their affiliation.
+
+    Parameters
+    ----------
+    name : str
+        Full name of the author as it appears on Google Scholar.
+
+    Returns
+    -------
+    str
+        Affiliation string from the author's Google Scholar profile, or an
+        empty string if no profile is found.
+    """
+    try:
+        author = next(scholarly.search_author(name))
+        return author.get("affiliation", "")
+    except StopIteration:
+        return ""
 
 
 def _nsf_name_cleanup(coauthors: list[str]) -> list[str]:
@@ -157,15 +184,16 @@ def _nsf_name_cleanup(coauthors: list[str]) -> list[str]:
 
 
 def _dump_to_csv(
-    co_authors: list[tuple[str, int]], filename: str | Path = "coauthors.csv"
+    co_authors: list[tuple[str, int, str]], filename: str | Path = "coauthors.csv"
 ) -> None:
     """
-    Dump a list of coauthors and their most recent affiliation year to a CSV file.
+    Dump a list of coauthors, their most recent collaboration year, and their
+    affiliation to a CSV file.
 
     Parameters
     ----------
-    co_authors : list[tuple[str, int]]
-        List of (coauthor, most_recent_year) tuples.
+    co_authors : list[tuple[str, int, str]]
+        List of (coauthor, most_recent_year, affiliation) tuples.
     filename : str | Path
         Name of the CSV file to write to.
 
@@ -175,6 +203,6 @@ def _dump_to_csv(
     """
 
     with Path(filename).open(mode="w", encoding="utf-8") as f:
-        for coauthor, year in co_authors:
+        for coauthor, year, affiliation in co_authors:
             last, first = coauthor.split(", ", 1)
-            f.write(f"{last},{first},{year}\n")
+            f.write(f"{last},{first},{year},{affiliation}\n")
