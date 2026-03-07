@@ -1,3 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+      <url>
+        <loc>https://quantum-accelerators.github.io/coapy/index.html</loc>
+      </url>
+      <url>
+        <loc>https://quantum-accelerators.github.io/coapy/install.html</loc>
+      </url>
+      <url>
+        <loc>https://quantum-accelerators.github.io/coapy/usage.html</loc>
+      </url>
+      <url>
+        <loc>https://quantum-accelerators.github.io/coapy/reference/coapy/scholar.html</loc>
+      </url>
+      <url>
+        <loc>https://quantum-accelerators.github.io/coapy/about/changelog.html</loc>
+      </url>
+      <url>
+        <loc>https://quantum-accelerators.github.io/coapy/about/conduct.html</loc>
+      </url>
+      <url>
+        <loc>https://quantum-accelerators.github.io/coapy/about/license.html</loc>
+      </url>
 </urlset>
