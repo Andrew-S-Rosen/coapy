@@ -7,3 +7,13 @@ A Python package for generating a list of collaborators suitable for an [NSF Col
 <p align="center">
   📖 <a href="https://andrew-s-rosen.github.io/coapy/"><b><i>Check out the documentation!</i></b></a> 📖
 </p>
+
+# Usage
+
+```python
+from coapy.scholar import get_coauthors
+
+orcid = "0000-0002-2365-7464"
+my_coauthors = get_coauthors(orcid=orcid)
+print(my_coauthors)
+```
