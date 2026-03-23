@@ -14,6 +14,5 @@ A Python package for generating a list of collaborators suitable for an [NSF Col
 from coapy.scholar import get_coauthors
 
 orcid = "0000-0002-2365-7464"
-my_coauthors = get_coauthors(orcid=orcid)
-print(my_coauthors)
+my_coauthors = get_coauthors(orcid=orcid) # writes out to `coauthors.xlsx`
 ```
