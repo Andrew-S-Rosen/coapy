@@ -13,7 +13,6 @@ from coapy.scholar import get_coauthors
 
 orcid = "0000-0002-0141-7006"
 my_coauthors = get_coauthors(orcid=orcid)
-print(my_coauthors)
 ```
 
 If you need to get co-authors for a certain number of years back in time, this can be modified as follows:
@@ -23,5 +22,4 @@ from coapy.scholar import get_coauthors
 
 orcid = "0000-0002-0141-7006"
 my_coauthors = get_coauthors(orcid=orcid, years_back=5)
-print(my_coauthors)
 ```
