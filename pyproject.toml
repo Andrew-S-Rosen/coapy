@@ -28,7 +28,7 @@ requires-python = ">=3.9, <3.14"
 dependencies = ["pandas[excel]>=2.0.0", "requests>=2.32.5", "tqdm>=4.0.0"]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.4.0", "pytest-cov>=3.0.0", "ruff>=0.0.285"]
+dev = ["pytest>=7.4.0", "pytest-cov>=7.1.0", "ruff>=0.0.285"]
 docs = [
     "zensical>=0.0.24",
     "mkdocstrings-python>=2.0.0",
