@@ -13,6 +13,6 @@ A Python package for generating a list of collaborators suitable for an [NSF Col
 ```python
 from coapy.scholar import get_coauthors
 
-orcid = "0000-0002-2365-7464"
+orcid = "0000-0002-0141-7006"
 my_coauthors = get_coauthors(orcid=orcid) # writes out to `coauthors.xlsx`
 ```
