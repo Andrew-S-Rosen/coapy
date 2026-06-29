@@ -1,3 +1,5 @@
+# Using `coapy` Locally
+
 ## Pre-Requisites
 
 You will need to have Python on your machine. If you do not, follow the instructions below:
@@ -12,3 +14,7 @@ In the terminal, run the following:
 ```bash
 pip install git+https://github.com/Andrew-S-Rosen/coapy.git
 ```
+
+# Using `coapy` on Google Colab
+
+Don't want to install Python on your computer? Alright, if you say so. Use [this Google Colab file](https://colab.research.google.com/drive/1EjF8_cToKG6YYZuJ78zEbamgAI3-tYEk?usp=sharing) instead.
