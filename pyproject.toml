@@ -25,10 +25,10 @@ classifiers = [
     "Operating System :: MacOS",
 ]
 requires-python = ">=3.9, <3.14"
-dependencies = ["pandas[excel]>=2.0.0", "requests>=2.32.5", "tqdm>=4.0.0"]
+dependencies = ["pandas[excel]>=2.0.0", "requests>=2.32.5", "tqdm>=4.68.3"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.4.2", "pytest-cov>=7.1.0", "ruff>=0.0.285"]
+dev = ["pytest>=8.4.2", "pytest-cov>=7.1.0", "ruff>=0.15.18"]
 docs = [
     "zensical>=0.0.24",
     "mkdocstrings-python>=2.0.0",
