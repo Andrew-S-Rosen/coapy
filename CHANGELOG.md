@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [1.1.0]
 
+### Added
+
+- Added option to format as NSF COA or DOE collaborator list
+
 ### Fixed
 
 - Fixed parsing of OpenAlex data where ChemRxiv preprints would result in the wrong author list and years being returned
