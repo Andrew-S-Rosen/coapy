@@ -300,7 +300,7 @@ def _nsf_name_cleanup(coauthors: list[str]) -> list[str]:
 def _dump_to_excel(
     co_authors: list[tuple[str, int, str]],
     filename: str | Path = "coauthors.xlsx",
-    format: Literal["NSF", "DOE"] = "nsf",
+    format: Literal["NSF", "DOE"] = "NSF",
 ) -> None:
     """
     Dump a list of coauthors, their most recent collaboration year, and their
