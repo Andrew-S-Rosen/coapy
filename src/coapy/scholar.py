@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import json
 from pathlib import Path
+from typing import Literal
 
 import pandas as pd
 import requests
@@ -16,6 +17,7 @@ def get_coauthors(
     orcid: str = "0000-0002-0141-7006",
     years_back: int | None = 4,
     filename: str | Path | None = "coauthors.xlsx",
+    format: Literal["NSF", "DOE"] = "NSF",
 ) -> list[tuple[str, int, str]]:
     """
     Given an ORCID, return a list of coauthors from the past N years.
@@ -32,12 +34,18 @@ def get_coauthors(
         Number of years to look back for coauthors. Set to `None` for no limit.
     filename : str | Path | None
         Path to the Excel (.xlsx) file to write to, if any.
+    format : Literal["NSF", "DOE"]
+        Output format for the Excel file.
 
     Returns
     -------
     list[tuple[str, int, str]]
         List of (coauthor, most_recent_year, affiliation) tuples from the past N years.
+        Names are always in ``"Last, First Middle"`` format regardless of ``format``.
     """
+    if format.lower() not in ("nsf", "doe"):
+        raise ValueError(f"format must be 'NSF' or 'DOE', got {format!r}")
+
     today = datetime.date.today()
     year_cutoff = (today.year - years_back) if years_back else None
 
@@ -45,11 +53,11 @@ def get_coauthors(
     orcid_papers = _fetch_orcid_works(orcid, year_cutoff=year_cutoff)
     works = _fetch_works_from_openalex(orcid_papers)
     co_authors = _get_coauthors_from_works(
-        works, my_openalex_id=openalex_id, my_name=my_name
+        works, my_openalex_id=openalex_id, my_name=my_name, year_cutoff=year_cutoff
     )
 
     if filename:
-        _dump_to_excel(co_authors, filename)
+        _dump_to_excel(co_authors, filename, format=format)
     return co_authors
 
 
@@ -167,6 +175,7 @@ def _get_coauthors_from_works(
     works: list[dict],
     my_openalex_id: str,
     my_name: str | None = None,
+    year_cutoff: int | None = None,
 ) -> list[tuple[str, int, str]]:
     """
     Get a de-duplicated list of co-authors from a list of works.
@@ -182,6 +191,8 @@ def _get_coauthors_from_works(
         OpenAlex author ID of the user, used to exclude them from results.
     my_name : str | None
         Display name of the user, used as a fallback for self-exclusion.
+    year_cutoff : int | None
+        Earliest publication year to include. Papers older than this are skipped.
 
     Returns
     -------
@@ -196,7 +207,23 @@ def _get_coauthors_from_works(
 
     for work in works:
         pub_year = work.get("publication_year") or current_year
-        for authorship in work.get("authorships") or []:
+
+        # Re-apply the year cutoff using OpenAlex's year, not ORCID's
+        if year_cutoff and pub_year < year_cutoff:
+            continue
+
+        authorships = work.get("authorships") or []
+
+        # Skip works where the user is not listed as an author in OpenAlex.
+        # This guards against DOI mismatches returning unrelated papers.
+        author_ids_in_work = {
+            ((a.get("author") or {}).get("id") or "").split("/")[-1]
+            for a in authorships
+        }
+        if my_id not in author_ids_in_work:
+            continue
+
+        for authorship in authorships:
             author = authorship.get("author") or {}
             author_id = (author.get("id") or "").split("/")[-1]
             author_name = author.get("display_name", "")
@@ -271,7 +298,9 @@ def _nsf_name_cleanup(coauthors: list[str]) -> list[str]:
 
 
 def _dump_to_excel(
-    co_authors: list[tuple[str, int, str]], filename: str | Path = "coauthors.xlsx"
+    co_authors: list[tuple[str, int, str]],
+    filename: str | Path = "coauthors.xlsx",
+    format: Literal["NSF", "DOE"] = "nsf",
 ) -> None:
     """
     Dump a list of coauthors, their most recent collaboration year, and their
@@ -281,18 +310,27 @@ def _dump_to_excel(
     ----------
     co_authors : list[tuple[str, int, str]]
         List of (coauthor, most_recent_year, affiliation) tuples.
+        Names are expected in ``"Last, First Middle"`` format.
     filename : str | Path
         Name of the Excel file to write to.
+    format : Literal["NSF", "DOE"]
+        ``"NSF"``: single ``"Name"`` column (``"Last, First Middle"``).
+        ``"DOE"``: separate ``"Last Name"`` and ``"First Name"`` columns.
 
     Returns
     -------
     None
     """
-    rows = []
-    for coauthor, year, affiliation in co_authors:
-        last, first = coauthor.split(", ", 1)
-        rows.append([last, first, year, affiliation])
-    df = pd.DataFrame(
-        rows, columns=["Last Name", "First Name", "Most Recent Year", "Affiliation(s)"]
-    )
+    if format.lower() == "nsf":
+        rows = [[name, year, affiliation] for name, year, affiliation in co_authors]
+        df = pd.DataFrame(rows, columns=["Name", "Most Recent Year", "Affiliation(s)"])
+    else:
+        rows = []
+        for coauthor, year, affiliation in co_authors:
+            last, first = coauthor.split(", ", 1)
+            rows.append([last, first, year, affiliation])
+        df = pd.DataFrame(
+            rows,
+            columns=["Last Name", "First Name", "Most Recent Year", "Affiliation(s)"],
+        )
     df.to_excel(filename, index=False)
